@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}New Trade – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/create_trade.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.5rem;">
+  <a href="/trades/dashboard/" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
+</div>
+
+<div class="create-wrap">
+
+  <!-- ── Left: Trade Form ── -->
+  <div class="form-card">
+    <div class="form-title">
+      + New Paper Trade
+      <span id="market-type-badge" class="market-type-badge market-crypto">₿ Crypto</span>
+    </div>
+    <div class="form-subtitle">
+      AI will suggest TP/SL values. You can edit before confirming.
+    </div>
+
+    <!-- ── AI Suggestion Box ── -->
+    <div id="ai-suggestion-box" class="ai-suggestion-box" style="display:none;">
+      <div class="ai-suggestion-header">
+        <div class="ai-badge">🤖 AI Suggestion</div>
+        <span id="ai-confidence" class="ai-confidence">—</span>
+      </div>
+
+      <div id="ai-direction" class="ai-direction">
+        <span class="direction-neut">→ Analyzing market...</span>
+      </div>
+
+      <div class="ai-values">
+        <div class="ai-value-item tp">
+          <div class="ai-value-label">Take Profit</div>
+          <div class="ai-value-number" id="ai-tp-value">—</div>
+        </div>
+        <div class="ai-value-item sl">
+          <div class="ai-value-label">Stop Loss</div>
+          <div class="ai-value-number" id="ai-sl-value">—</div>
+        </div>
+      </div>
+
+      <button class="btn-apply-ai" id="btn-apply-ai"
+              onclick="applyAiSuggestion()" style="display:none;">
+        ✨ Apply AI Suggestion
+      </button>
+    </div>
+    <!-- end AI box -->
+
+    <!-- ── Trade Form ── -->
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Symbol -->
+      <div class="form-group">
+        <label for="{{ form.symbol.id_for_label }}">
+          {{ form.symbol.label }}
+          <span id="symbol-trend" style="margin-left:0.5rem;"></span>
+        </label>
+        {{ form.symbol }}
+        {% for error in form.symbol.errors %}
+        <div class="error-text">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <!-- TP and SL side by side -->
+      <div class="tp-sl-grid">
+        <div class="form-group">
+          <label for="{{ form.tp_percent.id_for_label }}">
+            {{ form.tp_percent.label }}
+          </label>
+          {{ form.tp_percent }}
+          <div class="help-text">Close trade when price goes UP ↑</div>
+          {% for error in form.tp_percent.errors %}
+          <div class="error-text">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.sl_percent.id_for_label }}">
+            {{ form.sl_percent.label }}
+          </label>
+          {{ form.sl_percent }}
+          <div class="help-text">Close trade when price goes DOWN ↓</div>
+          {% for error in form.sl_percent.errors %}
+          <div class="error-text">{{ error }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="error-text" style="margin-bottom:1rem;">
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <!-- Live preview -->
+      <div id="preview-box">
+        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);
+                    margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.1em;">
+          Trade Preview
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Entry Price</span>
+          <span id="prev-entry" class="preview-entry">Loading…</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Take Profit Target</span>
+          <span id="prev-tp" class="preview-tp">—</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Stop Loss Target</span>
+          <span id="prev-sl" class="preview-sl">—</span>
+        </div>
+        <div class="preview-row">
+          <span class="preview-label">Risk / Reward Ratio</span>
+          <span id="prev-rr" style="font-family:var(--mono);">—</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:1.5rem;">
+        🚀 Open Trade
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Right: Sidebar ── -->
+  <div>
+
+    <!-- How it works -->
+    <div class="info-card">
+      <h3>How It Works</h3>
+      <div class="info-row"><span class="lbl">1. AI analyzes</span><span class="val">60 candles</span></div>
+      <div class="info-row"><span class="lbl">2. LSTM predicts</span><span class="val">UP / DOWN</span></div>
+      <div class="info-row"><span class="lbl">3. Auto-suggests</span><span class="val">TP / SL %</span></div>
+      <div class="info-row"><span class="lbl">4. You confirm</span><span class="val">or edit</span></div>
+      <div class="info-row"><span class="lbl">5. Agent monitors</span><span class="val">every 5 sec</span></div>
+      <div class="info-row"><span class="lbl">6. Auto-closes</span><span class="val">on TP or SL</span></div>
+    </div>
+
+    <!-- Risk tip -->
+    <div class="info-card">
+      <h3>💡 Risk/Reward Tip</h3>
+      <p style="font-size:0.82rem;color:var(--muted);line-height:1.7;">
+        A good risk/reward ratio is <strong style="color:var(--text);">2:1 or better</strong>.<br><br>
+        Example: SL = 2%, TP = 4%<br><br>
+        This means even if you win only 40% of trades, you still profit overall.<br><br>
+        This is <strong style="color:var(--accent);">paper trading</strong> — no real money involved. Experiment freely!
+      </p>
+    </div>
+
+    <!-- Supported markets -->
+    <div class="info-card">
+      <h3>📊 Supported Markets</h3>
+      <div class="info-row">
+        <span class="lbl">₿ Crypto</span>
+        <span class="badge badge-crypto">Binance</span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">💱 Forex</span>
+        <span class="badge badge-forex">MT5/XM</span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">🥇 Gold</span>
+        <span class="badge badge-gold">MT5/XM</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/create_trade.js' %}"></script>
+<script>
+  // Initialize create trade page on load
+  initCreateTrade();
+</script>
+{% endblock %}

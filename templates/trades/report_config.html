@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+{% block title %}Generate Report – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ════════════════════════════════════════
+   PORTFOLIO REPORT CONFIG PAGE
+   ════════════════════════════════════════ */
+
+.report-page { max-width: 1100px; margin: 0 auto; }
+
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media(max-width:900px){ .report-grid{ grid-template-columns:1fr; } }
+
+/* ── Hero Card ── */
+.report-hero {
+  background: linear-gradient(135deg, #0f1923 0%, #111827 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,229,255,0.15), transparent 70%);
+}
+
+.hero-title {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* ── Quick Stats ── */
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.q-stat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 0.9rem;
+  text-align: center;
+}
+.q-stat-label {
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+.q-stat-value {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* ── Form Panel ── */
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.section-h {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-h::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Date Range Selector ── */
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+@media(max-width:600px){ .date-grid{ grid-template-columns: repeat(2,1fr); } }
+
+.date-opt {
+  position: relative;
+  cursor: pointer;
+}
+
+.date-opt input { position: absolute; opacity: 0; }
+
+.date-card {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.date-opt:hover .date-card { border-color: rgba(0,229,255,0.4); }
+.date-opt input:checked + .date-card {
+  border-color: var(--accent);
+  background: rgba(0,229,255,0.08);
+}
+
+.date-num {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.date-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* Custom range */
+.custom-range {
+  display: none;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border);
+}
+.custom-range.show { display: flex; }
+.custom-range > div { flex: 1; }
+.custom-range label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.custom-range input {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  outline: none;
+}
+.custom-range input:focus { border-color: var(--accent); }
+
+/* ── Format Selector ── */
+.format-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.fmt-opt { position: relative; cursor: pointer; }
+.fmt-opt input { position: absolute; opacity: 0; }
+
+.fmt-card {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  transition: all 0.2s;
+}
+
+.fmt-opt:hover .fmt-card { border-color: rgba(0,229,255,0.4); }
+.fmt-opt input:checked + .fmt-card {
+  border-color: var(--accent);
+  background: rgba(0,229,255,0.05);
+}
+
+.fmt-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.fmt-pdf-icon  { background: rgba(255,23,68,0.12); color: #ff5252; }
+.fmt-xlsx-icon { background: rgba(0,230,118,0.12); color: var(--green); }
+
+.fmt-info { flex: 1; }
+.fmt-name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.fmt-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* ── Theme Selector ── */
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.theme-opt { position: relative; cursor: pointer; }
+.theme-opt input { position: absolute; opacity: 0; }
+
+.theme-card {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.theme-opt:hover .theme-card { border-color: rgba(0,229,255,0.4); }
+.theme-opt input:checked + .theme-card { border-color: var(--accent); }
+
+.theme-preview {
+  width: 100%;
+  height: 70px;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.theme-preview.dark  { background: #0a0d14; border: 1px solid #1e2d45; }
+.theme-preview.light { background: #ffffff; border: 1px solid #cbd5e1; }
+
+.theme-preview::before {
+  content: '';
+  position: absolute;
+  top: 12px; left: 10px; right: 10px;
+  height: 4px;
+  background: #00e5ff;
+  border-radius: 2px;
+}
+.theme-preview.dark::after,
+.theme-preview.light::after {
+  content: '';
+  position: absolute;
+  bottom: 12px; left: 10px;
+  width: 60%; height: 3px;
+  background: #00e676;
+  border-radius: 2px;
+}
+.theme-preview.light::after { background: #16a34a; }
+
+.theme-label {
+  font-size: 0.78rem;
+  font-family: var(--mono);
+}
+
+/* ── Generate Button ── */
+.btn-generate {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--accent), #00b8d4);
+  color: #000;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: var(--sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(0,229,255,0.2);
+}
+.btn-generate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,229,255,0.35);
+}
+.btn-generate:active { transform: translateY(0); }
+
+.btn-generate.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.btn-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(0,0,0,0.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sidebar Info Cards ── */
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.info-card h3 {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.feature-list { list-style: none; padding: 0; margin: 0; }
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.feature-list li::before {
+  content: '✓';
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.future-list li::before {
+  content: '◯';
+  color: var(--muted);
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="report-page">
+
+<!-- ── Hero Header ── -->
+<div class="report-hero">
+  <h1 class="hero-title">📊 Generate Portfolio Report</h1>
+  <p class="hero-subtitle">
+    Download a professional PDF or Excel report with charts, statistics, and complete trade history.
+  </p>
+
+  <!-- Quick stats preview -->
+  <div class="quick-stats">
+    <div class="q-stat">
+      <div class="q-stat-label">Total Trades</div>
+      <div class="q-stat-value" style="color:var(--accent);">{{ total_trades }}</div>
+    </div>
+    <div class="q-stat">
+      <div class="q-stat-label">Closed</div>
+      <div class="q-stat-value" style="color:var(--text);">{{ closed_trades }}</div>
+    </div>
+    <div class="q-stat">
+      <div class="q-stat-label">Open</div>
+      <div class="q-stat-value" style="color:var(--yellow);">{{ open_trades }}</div>
+    </div>
+    <div class="q-stat">
+      <div class="q-stat-label">Total PnL</div>
+      <div class="q-stat-value"
+           style="color:{% if total_pnl >= 0 %}var(--green){% else %}var(--red){% endif %};">
+        {% if total_pnl >= 0 %}+{% endif %}${{ total_pnl }}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Main Form Grid ── -->
+<form method="post" action="/trades/report/generate/" id="report-form">
+  {% csrf_token %}
+
+  <div class="report-grid">
+
+    <!-- LEFT COLUMN: Form -->
+    <div>
+
+      <!-- Date Range -->
+      <div class="form-panel">
+        <div class="section-h">📅 Date Range</div>
+
+        <div class="date-grid">
+          <label class="date-opt">
+            <input type="radio" name="date_range" value="7d">
+            <div class="date-card">
+              <div class="date-num">7</div>
+              <div class="date-label">Last 7 Days</div>
+            </div>
+          </label>
+
+          <label class="date-opt">
+            <input type="radio" name="date_range" value="30d" checked>
+            <div class="date-card">
+              <div class="date-num">30</div>
+              <div class="date-label">Last 30 Days</div>
+            </div>
+          </label>
+
+          <label class="date-opt">
+            <input type="radio" name="date_range" value="90d">
+            <div class="date-card">
+              <div class="date-num">90</div>
+              <div class="date-label">Last 90 Days</div>
+            </div>
+          </label>
+
+          <label class="date-opt">
+            <input type="radio" name="date_range" value="all">
+            <div class="date-card">
+              <div class="date-num" style="color:var(--accent);">∞</div>
+              <div class="date-label">All Time</div>
+            </div>
+          </label>
+        </div>
+
+        <label class="date-opt" style="display:block;cursor:pointer;">
+          <input type="radio" name="date_range" value="custom" id="rng-custom">
+          <div class="date-card" style="text-align:left;padding:0.6rem 1rem;">
+            <span style="font-size:0.85rem;color:var(--muted);">📆 Custom range</span>
+          </div>
+        </label>
+
+        <div class="custom-range" id="custom-range">
+          <div>
+            <label>From</label>
+            <input type="date" name="custom_start">
+          </div>
+          <div>
+            <label>To</label>
+            <input type="date" name="custom_end">
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Format -->
+      <div class="form-panel">
+        <div class="section-h">📦 Output Format</div>
+
+        <div class="format-grid">
+          <label class="fmt-opt">
+            <input type="radio" name="format" value="pdf" checked>
+            <div class="fmt-card">
+              <div class="fmt-icon fmt-pdf-icon">📄</div>
+              <div class="fmt-info">
+                <div class="fmt-name">PDF Report</div>
+                <div class="fmt-desc">Professional document with charts</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="fmt-opt">
+            <input type="radio" name="format" value="excel">
+            <div class="fmt-card">
+              <div class="fmt-icon fmt-xlsx-icon">📊</div>
+              <div class="fmt-info">
+                <div class="fmt-name">Excel (.xlsx)</div>
+                <div class="fmt-desc">Editable spreadsheet, all data</div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+
+      <!-- Theme -->
+      <div class="form-panel" id="theme-panel">
+        <div class="section-h">🎨 PDF Theme</div>
+
+        <div class="theme-grid">
+          <label class="theme-opt">
+            <input type="radio" name="theme" value="light" checked>
+            <div class="theme-card">
+              <div class="theme-preview light"></div>
+              <div class="theme-label">Light · Professional</div>
+            </div>
+          </label>
+
+          <label class="theme-opt">
+            <input type="radio" name="theme" value="dark">
+            <div class="theme-card">
+              <div class="theme-preview dark"></div>
+              <div class="theme-label">Dark · Trading</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+
+      <!-- Generate Button -->
+      <button type="submit" class="btn-generate" id="generate-btn">
+        <span id="btn-text">📥 Generate &amp; Download</span>
+      </button>
+
+    </div>
+
+
+    <!-- RIGHT COLUMN: Info -->
+    <div>
+
+      <div class="info-card">
+        <h3>📋 What's Included</h3>
+        <ul class="feature-list">
+          <li>Cover page with branding</li>
+          <li>Executive summary with key metrics</li>
+          <li>Equity curve chart</li>
+          <li>Win/Loss pie chart</li>
+          <li>PnL by symbol bar chart</li>
+          <li>Trade distribution donut</li>
+          <li>Closed trades table</li>
+          <li>Open positions table</li>
+          <li>Bot performance section</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>📂 Format Differences</h3>
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.7;">
+          <strong style="color:var(--text);">PDF:</strong> Best for sharing, printing, presenting.
+          Includes all 4 charts as images.<br><br>
+          <strong style="color:var(--text);">Excel:</strong> Best for analysis. Multiple sheets,
+          all trades editable, formulas work.
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>🚀 Coming Soon</h3>
+        <ul class="feature-list future-list">
+          <li>Auto-email weekly reports</li>
+          <li>Custom report templates</li>
+          <li>Tax-ready exports</li>
+          <li>Comparison reports</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+</form>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ── Toggle custom date range ──
+document.querySelectorAll('input[name="date_range"]').forEach(rb => {
+  rb.addEventListener('change', () => {
+    const cr = document.getElementById('custom-range');
+    if (rb.value === 'custom') {
+      cr.classList.add('show');
+    } else {
+      cr.classList.remove('show');
+    }
+  });
+});
+
+// ── Hide theme selector when Excel format is chosen ──
+document.querySelectorAll('input[name="format"]').forEach(rb => {
+  rb.addEventListener('change', () => {
+    const tp = document.getElementById('theme-panel');
+    if (rb.value === 'excel') {
+      tp.style.opacity = '0.5';
+      tp.style.pointerEvents = 'none';
+    } else {
+      tp.style.opacity = '1';
+      tp.style.pointerEvents = 'auto';
+    }
+  });
+});
+
+// ── Loading state on submit ──
+document.getElementById('report-form').addEventListener('submit', (e) => {
+  const btn = document.getElementById('generate-btn');
+  const txt = document.getElementById('btn-text');
+  btn.classList.add('loading');
+  txt.innerHTML = '<span class="btn-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px;"></span> Generating report...';
+
+  // Re-enable after 30 sec in case of error
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    txt.textContent = '📥 Generate & Download';
+  }, 30000);
+});
+</script>
+{% endblock %}

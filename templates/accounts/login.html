@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Login – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <div class="auth-header">
+      <h1>🔐 Login</h1>
+      <p>Welcome back to your trading dashboard</p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}
+        <div class="error-text">{{ error }}</div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      {% if form.non_field_errors %}
+      <div class="error-text" style="margin-bottom:1rem;">
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary auth-submit">
+        Login →
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      No account yet? <a href="/accounts/register/">Register here</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

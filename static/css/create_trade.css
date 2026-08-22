@@ -1,0 +1,245 @@
+/*
+  static/css/create_trade.css
+  Styles for the Create Trade page with AI suggestion UI.
+*/
+
+/* ── Page layout ── */
+.create-wrap {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .create-wrap { grid-template-columns: 1fr; }
+}
+
+/* ── Form card ── */
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+}
+
+.form-title {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+
+.form-subtitle {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+/* ── TP/SL Grid ── */
+.tp-sl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── AI Suggestion box ── */
+.ai-suggestion-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  transition: border-color 0.3s;
+}
+
+.ai-suggestion-box.loaded {
+  border-color: var(--accent);
+}
+
+.ai-suggestion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: rgba(0,229,255,0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+}
+
+.ai-confidence {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ai-confidence.high   { color: var(--green); }
+.ai-confidence.medium { color: var(--yellow); }
+.ai-confidence.low    { color: var(--red); }
+
+/* AI direction indicator */
+.ai-direction {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.direction-up   { color: var(--green); font-family: var(--mono); font-weight: 700; }
+.direction-down { color: var(--red);   font-family: var(--mono); font-weight: 700; }
+.direction-neut { color: var(--muted); font-family: var(--mono); }
+
+/* AI suggested values row */
+.ai-values {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.ai-value-item {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  text-align: center;
+}
+
+.ai-value-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ai-value-number {
+  font-size: 1.2rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.ai-value-item.tp .ai-value-number { color: var(--green); }
+.ai-value-item.sl .ai-value-number { color: var(--red); }
+
+/* Apply AI suggestion button */
+.btn-apply-ai {
+  width: 100%;
+  margin-top: 0.8rem;
+  background: rgba(0,229,255,0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply-ai:hover {
+  background: rgba(0,229,255,0.2);
+}
+
+/* AI loading spinner */
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Live price preview ── */
+#preview-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(30,45,69,0.4);
+  font-size: 0.82rem;
+}
+
+.preview-row:last-child { border-bottom: none; }
+.preview-label { color: var(--muted); }
+.preview-val   { font-family: var(--mono); }
+.preview-tp    { color: var(--green); font-family: var(--mono); font-weight: 700; }
+.preview-sl    { color: var(--red);   font-family: var(--mono); font-weight: 700; }
+.preview-entry { color: var(--accent); font-family: var(--mono); font-weight: 700; }
+
+/* ── Sidebar info cards ── */
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.info-card h3 {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.info-row:last-child { border-bottom: none; }
+.info-row .lbl { color: var(--muted); }
+.info-row .val { font-family: var(--mono); color: var(--text); }
+
+/* Market type indicator */
+.market-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  margin-left: 0.5rem;
+}
+
+.market-crypto   { background: rgba(0,229,255,0.1);  color: var(--accent); }
+.market-forex    { background: rgba(0,230,118,0.1);  color: var(--green); }
+.market-commodity{ background: rgba(255,214,0,0.1);  color: var(--yellow); }

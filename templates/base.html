@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}AI Trading Agent{% endblock %}</title>
+
+  <!-- Base CSS (shared across all pages) -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+  <!-- Page-specific CSS -->
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <a href="/trades/dashboard/" class="nav-brand">⬡ AI<span>TRADE</span></a>
+<div class="nav-links">
+    {% if user.is_authenticated %}
+      <span class="nav-user">{{ user.username }}</span>
+      <a href="/trades/dashboard/">Dashboard</a>
+      <a href="/trades/create/">+ New Trade</a>
+      <a href="/trades/bot/">🤖 Bot</a>
+      <a href="/trades/chat/">💬 AI Chat</a>
+      <a href="/trades/report/">📊 Report</a>
+      <a href="/accounts/logout/" class="btn btn-accent btn-sm">Logout</a>
+    {% else %}
+      <a href="/accounts/login/">Login</a>
+      <a href="/accounts/register/" class="btn btn-accent btn-sm">Register</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- ── Main Content ── -->
+<div class="container">
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+</div>
+
+<!-- ── Page-specific JS ── -->
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>v

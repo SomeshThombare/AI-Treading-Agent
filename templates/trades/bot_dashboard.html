@@ -1,0 +1,865 @@
+{% extends "base.html" %}
+{% block title %}Auto Trading Bot – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ════════════════════════════════════════
+   BOT DASHBOARD — MODERN UI
+   ════════════════════════════════════════ */
+
+/* ── Layout ── */
+.bot-page { max-width: 1200px; margin: 0 auto; }
+
+.bot-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media(max-width:960px){ .bot-grid{ grid-template-columns:1fr; } }
+
+/* ── Hero Status Card ── */
+.hero-card {
+  background: linear-gradient(135deg, #0f1923 0%, #111827 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  opacity: 0.06;
+  transition: background 0.5s;
+}
+
+.hero-card.running::before { background: var(--green); }
+.hero-card.stopped::before { background: var(--muted); }
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.hero-status {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.status-ring {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  position: relative;
+}
+
+.status-ring.running {
+  background: rgba(0,230,118,0.12);
+  border: 2px solid var(--green);
+  box-shadow: 0 0 20px rgba(0,230,118,0.2);
+}
+
+.status-ring.stopped {
+  background: rgba(100,116,139,0.12);
+  border: 2px solid var(--border);
+}
+
+.status-ring.running::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  opacity: 0.3;
+  animation: ringPulse 2s infinite;
+}
+
+@keyframes ringPulse {
+  0%   { transform: scale(1); opacity: 0.3; }
+  50%  { transform: scale(1.2); opacity: 0; }
+  100% { transform: scale(1); opacity: 0.3; }
+}
+
+.status-info h2 {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  margin-bottom: 0.2rem;
+}
+
+.status-info p {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ── Toggle Button ── */
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  font-family: var(--sans);
+  transition: all 0.2s;
+}
+
+.toggle-btn.start {
+  background: var(--green);
+  color: #000;
+  box-shadow: 0 4px 15px rgba(0,230,118,0.3);
+}
+.toggle-btn.start:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,230,118,0.4); }
+
+.toggle-btn.stop {
+  background: rgba(255,23,68,0.12);
+  color: var(--red);
+  border: 1px solid rgba(255,23,68,0.3);
+}
+.toggle-btn.stop:hover { background: rgba(255,23,68,0.2); }
+
+/* ── Hero Stats ── */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.h-stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.h-stat-label {
+  font-size: 0.68rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.h-stat-value {
+  font-size: 1.5rem;
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+/* ── Daily loss bar ── */
+.loss-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.loss-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+}
+
+.loss-bar-wrap {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.loss-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* ── Cards ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Symbol Grid ── */
+.sym-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* .sym-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s;
+  user-select: none;
+} */
+
+.sym-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sym-info{
+  min-width:0;
+}
+.sym-chip:hover { border-color: rgba(0,229,255,0.4); background: rgba(0,229,255,0.03); }
+.sym-chip.on { border-color: var(--accent); background: rgba(0,229,255,0.06); }
+
+.sym-chip input { display: none; }
+
+.sym-check {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  transition: all 0.15s;
+}
+.sym-chip.on .sym-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
+.sym-info { flex: 1; }
+
+.sym-ticker { font-family: var(--mono); font-size: 0.8rem; font-weight: 700; }
+.sym-name   { font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
+
+.mkt-pill {
+  font-size: 0.6rem;
+  font-family: var(--mono);
+  padding: 0.1rem 0.4rem;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.mkt-crypto   { background: rgba(0,229,255,0.15); color: var(--accent); }
+.mkt-forex    { background: rgba(0,230,118,0.15); color: var(--green); }
+.mkt-gold     { background: rgba(255,214,0,0.15);  color: var(--yellow); }
+
+/* ── Settings ── */
+.setting-row {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(30,45,69,0.6);
+  gap: 0.8rem;
+}
+.setting-row:last-child { border-bottom: none; }
+
+.setting-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.setting-input {
+  width: 72px !important;
+  padding: 0.35rem 0.5rem !important;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.setting-input:focus { border-color: var(--accent); }
+
+.setting-unit {
+  font-size: 0.72rem;
+  color: var(--muted);
+  min-width: 36px;
+  font-family: var(--mono);
+}
+
+/* ── Buttons ── */
+.save-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 1.2rem;
+  font-family: var(--sans);
+  transition: all 0.2s;
+}
+.save-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+/* ── Activity Log ── */
+.log-wrap {
+  max-height: 520px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.log-entry {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  margin-bottom: 0.35rem;
+  font-size: 0.79rem;
+  border-left: 3px solid;
+  transition: background 0.15s;
+}
+.log-entry:hover { filter: brightness(1.1); }
+
+.log-entry.OPEN  { border-color: var(--green);  background: rgba(0,230,118,0.05); }
+.log-entry.SKIP  { border-color: var(--border);  background: rgba(255,255,255,0.02); }
+.log-entry.SCAN  { border-color: var(--accent);  background: rgba(0,229,255,0.03); }
+.log-entry.CLOSE { border-color: var(--yellow);  background: rgba(255,214,0,0.04); }
+.log-entry.PAUSE { border-color: var(--red);     background: rgba(255,23,68,0.04); }
+.log-entry.ERROR { border-color: var(--red);     background: rgba(255,23,68,0.06); }
+
+.log-icon-wrap {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+}
+
+.log-content { flex: 1; }
+.log-text    { color: var(--text); line-height: 1.45; }
+.log-sym     { font-family: var(--mono); color: var(--accent); font-weight: 700; margin-right: 0.3rem; }
+.log-conf    { color: var(--muted); font-size: 0.7rem; }
+.log-ts      { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 0.2rem; }
+
+.log-tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.lt-OPEN  { background: rgba(0,230,118,0.2);  color: var(--green); }
+.lt-SKIP  { background: rgba(100,116,139,0.2); color: var(--muted); }
+.lt-SCAN  { background: rgba(0,229,255,0.2);   color: var(--accent); }
+.lt-CLOSE { background: rgba(255,214,0,0.2);   color: var(--yellow); }
+.lt-PAUSE { background: rgba(255,23,68,0.2);   color: var(--red); }
+.lt-ERROR { background: rgba(255,23,68,0.2);   color: var(--red); }
+
+/* ── Empty log ── */
+.log-empty {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  color: var(--muted);
+}
+.log-empty .ei { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.5; }
+.log-empty p   { font-size: 0.85rem; line-height: 1.6; }
+
+/* ── Tip box ── */
+.tip {
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  font-size: 0.79rem;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 1rem;
+}
+.tip strong { color: var(--accent); }
+
+/* ── Live dot ── */
+.ldot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  animation: ldp 1.5s infinite;
+}
+@keyframes ldp { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ── Section divider ── */
+.sdiv {
+  height: 1px;
+  background: var(--border);
+  margin: 1.2rem 0;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="bot-page">
+
+<!-- ══════════════════════════════════════
+     HERO STATUS CARD
+     ══════════════════════════════════════ -->
+<div class="hero-card {% if config.is_active %}running{% else %}stopped{% endif %}">
+
+  <div class="hero-top">
+    <div class="hero-status">
+      <div class="status-ring {% if config.is_active %}running{% else %}stopped{% endif %}">
+        {% if config.is_active %}🤖{% else %}💤{% endif %}
+      </div>
+      <div class="status-info">
+        <!-- ── REPLACE the form section with this ── -->
+      {% if config.is_active %}
+        <a href="/trades/bot/toggle/" class="toggle-btn stop"
+          onclick="return confirm('Stop the bot?')">
+          ⏹ Stop Bot
+        </a>
+      {% else %}
+        <a href="/trades/bot/toggle/" class="toggle-btn start">
+          ▶ Start Bot
+        </a>
+      {% endif %}
+      </div>
+    </div>
+
+    <!-- <form method="post" action="/trades/bot/toggle/">
+      {% csrf_token %}
+      {% if config.is_active %}
+        <button type="submit" class="toggle-btn stop">⏹ Stop Bot</button>
+      {% else %}
+        <button type="submit" class="toggle-btn start">▶ Start Bot</button>
+      {% endif %}
+    </form> -->
+  </div>
+
+  <!-- Stats Row -->
+  <div class="hero-stats">
+    <div class="h-stat">
+      <div class="h-stat-label">Total Trades</div>
+      <div class="h-stat-value" style="color:var(--accent);">{{ config.total_bot_trades }}</div>
+    </div>
+    <div class="h-stat">
+      <div class="h-stat-label">Wins</div>
+      <div class="h-stat-value" style="color:var(--green);">{{ config.total_bot_wins }}</div>
+    </div>
+    <div class="h-stat">
+      <div class="h-stat-label">Losses</div>
+      <div class="h-stat-value" style="color:var(--red);">{{ config.total_bot_losses }}</div>
+    </div>
+    <div class="h-stat">
+      <div class="h-stat-label">Win Rate</div>
+      <div class="h-stat-value"
+           style="color:{% if config.win_rate >= 50 %}var(--green){% else %}var(--red){% endif %};">
+        {{ config.win_rate }}%
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Daily Loss Bar -->
+<div class="loss-section">
+  <div class="loss-header">
+    <span style="color:var(--muted);">Daily Loss Limit</span>
+    <span style="font-family:var(--mono);font-size:0.82rem;">
+      <span style="color:{% if config.daily_loss_count >= config.daily_loss_limit %}var(--red){% elif config.daily_loss_count >= 2 %}var(--yellow){% else %}var(--green){% endif %};">
+        {{ config.daily_loss_count }}
+      </span>
+      <span style="color:var(--muted);"> / {{ config.daily_loss_limit }} losses today</span>
+    </span>
+  </div>
+  <div class="loss-bar-wrap">
+    <div class="loss-bar-fill"
+      style="width:{% widthratio config.daily_loss_count config.daily_loss_limit 100 %}%;
+             background:{% if config.daily_loss_count >= config.daily_loss_limit %}var(--red){% elif config.daily_loss_count >= 2 %}var(--yellow){% else %}var(--green){% endif %};">
+    </div>
+  </div>
+  {% if config.daily_loss_count >= config.daily_loss_limit %}
+  <div style="color:var(--red);font-size:0.78rem;margin-top:0.5rem;">
+    ⚠️ Daily loss limit reached — bot paused until tomorrow.
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ══════════════════════════════════════
+     MAIN GRID
+     ══════════════════════════════════════ -->
+<div class="bot-grid">
+
+  <!-- ── LEFT: Settings ── -->
+  <div>
+    <form method="post" action="/trades/bot/settings/">
+      {% csrf_token %}
+
+      <!-- Symbol Selection -->
+      <div class="panel">
+        <div class="panel-title">📊 Trading Symbols</div>
+
+        <div class="sym-grid">
+          {% for sym in all_symbols %}
+          <label class="sym-chip {% if sym.selected %}on{% endif %}"
+                 onclick="toggleChip(this)">
+            <input type="checkbox" name="symbols"
+                   value="{{ sym.symbol }}"
+                   {% if sym.selected %}checked{% endif %}>
+            <div class="sym-check">{% if sym.selected %}✓{% endif %}</div>
+            <div class="sym-info">
+              <div class="sym-ticker">{{ sym.symbol }}</div>
+              <div class="sym-name">{{ sym.name }}</div>
+            </div>
+            <span class="mkt-pill
+              {% if sym.market == 'Crypto' %}mkt-crypto
+              {% elif sym.market == 'Forex' %}mkt-forex
+              {% else %}mkt-gold{% endif %}">
+              {{ sym.market }}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Confidence Thresholds -->
+      <div class="panel">
+        <div class="panel-title">⚙️ Confidence Thresholds</div>
+
+        <div class="setting-row">
+          <span class="setting-label">₿ Crypto minimum</span>
+          <input type="number" name="conf_crypto" class="setting-input"
+                 value="{{ config.min_confidence_crypto }}" min="50" max="95" step="1">
+          <span class="setting-unit">%</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">💱 Forex minimum</span>
+          <input type="number" name="conf_forex" class="setting-input"
+                 value="{{ config.min_confidence_forex }}" min="50" max="95" step="1">
+          <span class="setting-unit">%</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">🥇 Gold minimum</span>
+          <input type="number" name="conf_gold" class="setting-input"
+                 value="{{ config.min_confidence_gold }}" min="50" max="95" step="1">
+          <span class="setting-unit">%</span>
+        </div>
+      </div>
+
+      <!-- Risk Management -->
+      <div class="panel">
+        <div class="panel-title">🛡️ Risk Management</div>
+
+        <div class="setting-row">
+          <span class="setting-label">Max open trades</span>
+          <input type="number" name="max_trades" class="setting-input"
+                 value="{{ config.max_open_trades }}" min="1" max="10" step="1">
+          <span class="setting-unit">trades</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Cooldown after loss</span>
+          <input type="number" name="cooldown" class="setting-input"
+                 value="{{ config.cooldown_minutes }}" min="5" max="120" step="5">
+          <span class="setting-unit">min</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Daily loss limit</span>
+          <input type="number" name="daily_limit" class="setting-input"
+                 value="{{ config.daily_loss_limit }}" min="1" max="10" step="1">
+          <span class="setting-unit">losses</span>
+        </div>
+
+      </div>
+
+      <!-- Bot Trade Sizing -->
+      <div class="panel">
+        <div class="panel-title">💰 Bot Trade Sizing</div>
+
+        <div class="setting-row">
+          <span class="setting-label">Fixed quantity per trade</span>
+          <input type="number" name="bot_quantity" class="setting-input"
+                 value="{{ config.bot_fixed_quantity }}" min="0.000001" step="0.01">
+          <span class="setting-unit">units</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Fixed amount per trade</span>
+          <input type="number" name="bot_amount" class="setting-input"
+                 value="{{ config.bot_fixed_amount }}" min="1" step="1">
+          <span class="setting-unit">$</span>
+        </div>
+
+        <button type="submit" class="save-btn">💾 Save All Settings</button>
+
+        <div class="tip">
+          <strong>💡 Tip:</strong> Every bot trade uses these fixed values.
+          Set quantity (e.g. <strong>0.01</strong> for gold/forex,
+          <strong>0.5</strong> for crypto) and amount (e.g. <strong>$100</strong>)
+          based on your strategy. For confidence: <strong>51%</strong> for testing,
+          <strong>65%+</strong> for real use.
+        </div>
+      </div>
+
+    </form>
+
+    <!-- How Bot Works -->
+    <!-- <div class="panel">
+      <div class="panel-title">🔄 How the Bot Works</div>
+      <div style="font-size:0.82rem;line-height:1;">
+        {% for step in "123456"|make_list %}
+        <div style="display:flex;gap:0.8rem;padding:0.55rem 0;
+                    border-bottom:1px solid rgba(30,45,69,0.5);">
+          <span style="font-family:var(--mono);color:var(--accent);
+                       font-size:0.75rem;min-width:18px;margin-top:0.1rem;">
+            {{ forloop.counter }}
+          </span>
+          <span style="color:var(--muted);">
+            {% if forloop.counter == 1 %}Scans selected symbols every 15 minutes
+            {% elif forloop.counter == 2 %}Runs LSTM model → predicts UP or DOWN
+            {% elif forloop.counter == 3 %}Checks confidence exceeds your threshold
+            {% elif forloop.counter == 4 %}Max 1 trade per market (diversification)
+            {% elif forloop.counter == 5 %}Waits 30 min after any loss (cooldown)
+            {% elif forloop.counter == 6 %}Trade monitor auto-closes on TP or SL
+            {% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div> -->
+
+  </div>
+
+
+  <!-- ── RIGHT: Activity Log ── -->
+  <div>
+    <div class="panel">
+
+      <!-- Log header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+        <div class="panel-title" style="margin-bottom:0;">
+          📋 Bot Activity Log
+        </div>
+        <div style="display:flex;align-items:center;gap:0.8rem;">
+          {% if config.is_active %}
+          <span style="display:flex;align-items:center;gap:0.35rem;
+                       font-size:0.72rem;color:var(--muted);">
+            <span class="ldot"></span> Live · refreshes 30s
+          </span>
+          {% endif %}
+          <span style="font-family:var(--mono);font-size:0.7rem;
+                       color:var(--muted);background:var(--surface2);
+                       padding:0.2rem 0.6rem;border-radius:6px;">
+            {{ logs|length }} entries
+          </span>
+        </div>
+      </div>
+
+      <!-- Log entries -->
+      <div class="log-wrap" id="log-wrap">
+        {% if logs %}
+          {% for log in logs %}
+          <div class="log-entry {{ log.action }}">
+
+            <div class="log-icon-wrap">
+              {% if log.action == 'OPEN'  %}🟢
+              {% elif log.action == 'SKIP'  %}⚪
+              {% elif log.action == 'SCAN'  %}🔍
+              {% elif log.action == 'CLOSE' %}🏁
+              {% elif log.action == 'PAUSE' %}⏸️
+              {% else %}❌{% endif %}
+            </div>
+
+            <div class="log-content">
+              <div class="log-text">
+                {% if log.symbol %}
+                  <span class="log-sym">{{ log.symbol }}</span>
+                {% endif %}
+                {{ log.message }}
+                {% if log.confidence %}
+                  <span class="log-conf">({{ log.confidence }}% conf)</span>
+                {% endif %}
+              </div>
+              <div class="log-ts">{{ log.timestamp|date:"d M Y · H:i:s" }}</div>
+            </div>
+
+            <span class="log-tag lt-{{ log.action }}">{{ log.action }}</span>
+          </div>
+          {% endfor %}
+
+        {% else %}
+          <div class="log-empty">
+            <div class="ei">🤖</div>
+            <p>
+              No activity yet.<br>
+              Start the bot above, then run<br>
+              <code style="font-family:var(--mono);color:var(--accent);font-size:0.8rem;">
+                python manage.py run_auto_agent
+              </code><br>
+              in a separate terminal.
+            </p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Quick Stats Panel -->
+    <div class="panel">
+      <div class="panel-title">📈 Performance Breakdown</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
+        <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);
+                    border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:0.68rem;font-family:var(--mono);color:var(--muted);
+                      text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">
+            Take Profit Hits
+          </div>
+          <div style="font-size:2rem;font-family:var(--mono);font-weight:700;color:var(--green);">
+            {{ config.total_bot_wins }}
+          </div>
+        </div>
+
+        <div style="background:rgba(255,23,68,0.06);border:1px solid rgba(255,23,68,0.15);
+                    border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:0.68rem;font-family:var(--mono);color:var(--muted);
+                      text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;">
+            Stop Loss Hits
+          </div>
+          <div style="font-size:2rem;font-family:var(--mono);font-weight:700;color:var(--red);">
+            {{ config.total_bot_losses }}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Win rate bar -->
+      <div style="margin-top:1.2rem;">
+        <div style="display:flex;justify-content:space-between;
+                    font-size:0.78rem;margin-bottom:0.5rem;">
+          <span style="color:var(--muted);">Win Rate</span>
+          <span style="font-family:var(--mono);
+                       color:{% if config.win_rate >= 50 %}var(--green){% else %}var(--red){% endif %};">
+            {{ config.win_rate }}%
+          </span>
+        </div>
+        <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;border-radius:4px;
+                      width:{{ config.win_rate }}%;
+                      background:{% if config.win_rate >= 50 %}var(--green){% else %}var(--red){% endif %};
+                      transition:width 0.8s ease;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's losses -->
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);
+                  display:flex;justify-content:space-between;font-size:0.82rem;">
+        <span style="color:var(--muted);">Today's losses</span>
+        <span style="font-family:var(--mono);">
+          {{ config.daily_loss_count }} / {{ config.daily_loss_limit }}
+        </span>
+      </div>
+      <div style="margin-top:0.5rem;padding-top:1rem;border-top:1px solid var(--border);
+                  display:flex;justify-content:space-between;font-size:0.82rem;">
+        <span style="color:var(--muted);">Selected symbols</span>
+        <span style="font-family:var(--mono);color:var(--accent);">
+          {{ config.selected_symbols|length }}
+        </span>
+      </div>
+      <div style="margin-top:0.5rem;padding-top:1rem;border-top:1px solid var(--border);
+                  display:flex;justify-content:space-between;font-size:0.82rem;">
+        <span style="color:var(--muted);">Max open trades</span>
+        <span style="font-family:var(--mono);">{{ config.max_open_trades }}</span>
+      </div>
+      <div style="margin-top:0.5rem;padding-top:1rem;border-top:1px solid var(--border);
+                  display:flex;justify-content:space-between;font-size:0.82rem;">
+        <span style="color:var(--muted);">Cooldown after loss</span>
+        <span style="font-family:var(--mono);">{{ config.cooldown_minutes }} min</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ── Symbol chip toggle ──
+function toggleChip(label) {
+  const cb = label.querySelector('input');
+  const check = label.querySelector('.sym-check');
+  setTimeout(() => {
+    if (cb.checked) {
+      label.classList.add('on');
+      check.textContent = '✓';
+    } else {
+      label.classList.remove('on');
+      check.textContent = '';
+    }
+  }, 10);
+}
+
+// ── Auto refresh every 30s when bot is active ──
+{% if config.is_active %}
+setTimeout(() => location.reload(), 30000);
+{% endif %}
+
+// ── Keep log scrolled to top (newest first) ──
+const lw = document.getElementById('log-wrap');
+if (lw) lw.scrollTop = 0;
+</script>
+{% endblock %}

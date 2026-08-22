@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1>📊 Dashboard</h1>
+    <p>Welcome back, <strong>{{ user.username }}</strong> — your AI agent is watching the markets.</p>
+  </div>
+  <a href="/trades/create/" class="btn btn-primary">+ New Trade</a>
+</div>
+
+<!-- ── Stats Grid ── -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Open Trades</div>
+    <div class="stat-value accent">{{ total_open }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Closed Trades</div>
+    <div class="stat-value">{{ total_closed }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Win Rate</div>
+    <div class="stat-value {% if win_rate >= 50 %}green{% else %}red{% endif %}">{{ win_rate }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total PnL</div>
+    <div class="stat-value {% if total_pnl >= 0 %}green{% else %}red{% endif %}">
+            {% if total_pnl >= 0 %}+{% endif %}${{ total_pnl }}
+      <!-- {% if total_pnl >= 0 %}+{% endif %}{{ total_pnl }}% -->
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">TP Wins</div>
+    <div class="stat-value green">{{ wins }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">SL Losses</div>
+    <div class="stat-value red">{{ losses }}</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════
+     LIVE CHART + TP/SL OVERLAY
+     ════════════════════════════════ -->
+<div class="section">
+  <div class="chart-card">
+
+    <!-- Toolbar -->
+    <div class="chart-toolbar">
+      <div class="chart-toolbar-left">
+        <span class="chart-title">📈 Live Chart</span>
+
+        <!-- Symbol buttons -->
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <button class="sym-btn active" onclick="switchSymbol('BINANCE:BTCUSDT','BTCUSDT',this)">BTC</button>
+          <button class="sym-btn" onclick="switchSymbol('BINANCE:ETHUSDT','ETHUSDT',this)">ETH</button>
+          <button class="sym-btn" onclick="switchSymbol('BINANCE:BNBUSDT','BNBUSDT',this)">BNB</button>
+          <button class="sym-btn" onclick="switchSymbol('BINANCE:SOLUSDT','SOLUSDT',this)">SOL</button>
+          <button class="sym-btn" onclick="switchSymbol('OANDA:EURUSD','EURUSD',this)">EUR/USD</button>
+          <button class="sym-btn" onclick="switchSymbol('OANDA:GBPUSD','GBPUSD',this)">GBP/USD</button>
+          <button class="sym-btn" onclick="switchSymbol('OANDA:XAUUSD','XAUUSD',this)">GOLD</button>
+        </div>
+
+        <!-- Interval buttons -->
+        <div style="display:flex;gap:0.3rem;">
+          <button class="iv-btn active" onclick="switchInterval('1',this)">1m</button>
+          <button class="iv-btn" onclick="switchInterval('5',this)">5m</button>
+          <button class="iv-btn" onclick="switchInterval('15',this)">15m</button>
+          <button class="iv-btn" onclick="switchInterval('60',this)">1H</button>
+          <button class="iv-btn" onclick="switchInterval('D',this)">1D</button>
+        </div>
+
+        <!-- Legend -->
+        <div class="chart-legend">
+          <span><span class="legend-dot legend-tp"></span>Take Profit</span>
+          <span><span class="legend-dot legend-sl"></span>Stop Loss</span>
+          <span><span class="legend-dot legend-entry"></span>Entry</span>
+          <span><span class="legend-dot legend-price"></span>Current</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart + Canvas overlay -->
+    <div class="chart-wrap">
+      <div id="tradingview_chart"></div>
+      <canvas id="tpsl-canvas"></canvas>
+    </div>
+
+    <!-- Signal Panel -->
+    <div class="signal-panel">
+      <div class="sig-box">
+        <span class="label">Signal</span>
+        <span id="sig-tag" class="tag tag-neu">→ NEUTRAL</span>
+        <span id="sig-desc" style="color:var(--muted);font-size:0.78rem;">Analyzing…</span>
+      </div>
+      <div class="sig-box">
+        <span class="label">Live Price</span>
+        <span id="live-price" style="font-family:var(--mono);color:var(--accent);font-size:1rem;font-weight:700;">—</span>
+      </div>
+      <div class="sig-box">
+        <span class="label">Trades on symbol</span>
+        <span id="sym-trade-count" style="font-family:var(--mono);">0</span>
+      </div>
+      <div id="tpsl-badges" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════
+     PORTFOLIO OVERVIEW
+     ════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">💼 Portfolio Overview</span>
+  </div>
+  <div class="portfolio-grid">
+
+    <!-- Open Positions -->
+    <div class="port-card">
+      <h3>Open Positions</h3>
+      {% if trade_data %}
+        {% for item in trade_data %}{% with t=item.trade %}
+        <div class="port-row">
+          <span class="port-sym">{{ t.symbol }}</span>
+          <span class="muted" style="font-size:0.78rem;">Entry ${{ t.entry_price|floatformat:2 }}</span>
+          {% if t.current_price %}
+            {% if t.current_price >= t.entry_price %}
+              <span class="port-pos">▲ UP</span>
+            {% else %}
+              <span class="port-neg">▼ DOWN</span>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endwith %}{% endfor %}
+      {% else %}
+        <div style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">No open positions.</div>
+      {% endif %}
+    </div>
+
+    <!-- Equity Curve -->
+    <div class="port-card">
+      <h3>Equity Curve</h3>
+      <canvas id="equity-canvas"></canvas>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;text-align:center;">
+        Cumulative PnL — {{ total_closed }} closed trade{{ total_closed|pluralize }}
+      </div>
+    </div>
+
+    <!-- Win/Loss -->
+    <div class="port-card">
+      <h3>Win / Loss Breakdown</h3>
+      <div class="port-row"><span>Take Profit Wins</span><span class="port-pos">{{ wins }}</span></div>
+      <div class="port-row"><span>Stop Loss Losses</span><span class="port-neg">{{ losses }}</span></div>
+      <div class="port-row"><span>Win Rate</span>
+        <span class="{% if win_rate >= 50 %}port-pos{% else %}port-neg{% endif %}">{{ win_rate }}%</span>
+      </div>
+      <div class="port-row" style="border-top:1px solid var(--border);padding-top:0.8rem;margin-top:0.5rem;">
+        <strong>Total PnL</strong>
+        <strong class="{% if total_pnl >= 0 %}port-pos{% else %}port-neg{% endif %}">
+          {% if total_pnl >= 0 %}+{% endif %}${{ total_pnl|floatformat:2 }}
+        </strong>
+      </div>
+    </div>
+
+    <!-- Best/Worst -->
+    <div class="port-card">
+      <h3>Best &amp; Worst Trades</h3>
+      {% if closed_trades %}
+        {% for trade in closed_trades %}
+          {% if forloop.first %}
+          <div class="port-row">
+            <span>🏆 Best</span>
+            <span class="port-sym">{{ trade.symbol }}</span>
+            <span class="port-pos">{% if trade.pnl %}+${{ trade.pnl|floatformat:2 }}{% else %}—{% endif %}</span>
+          </div>
+          {% endif %}
+          {% if forloop.last and not forloop.first %}
+          <div class="port-row">
+            <span>💔 Worst</span>
+            <span class="port-sym">{{ trade.symbol }}</span>
+            <span class="{% if trade.pnl and trade.pnl >= 0 %}port-pos{% else %}port-neg{% endif %}">
+              {% if trade.pnl %}${{ trade.pnl|floatformat:2 }}{% else %}—{% endif %}
+            </span>
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="port-row"><span>Total Closed</span><span class="mono">{{ total_closed }}</span></div>
+        <div class="port-row"><span>Open Now</span><span class="mono accent" style="color:var(--accent);">{{ total_open }}</span></div>
+      {% else %}
+        <div style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">No closed trades yet.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ── Open Trades Table ── -->
+<div class="section">
+  <div class="section-header">
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <span class="live-dot"></span>
+      <span class="section-title">Open Trades</span>
+    </div>
+    <span class="section-count">{{ total_open }} active</span>
+  </div>
+
+  <div class="table-card">
+    {% if trade_data %}
+    <table>
+      <thead><tr>
+        <th>Symbol</th><th>Entry</th><th>Current Price</th>
+        <th>Take Profit</th><th>Stop Loss</th>
+        <th>Trend</th><th>Signal</th><th>Action</th>
+      </tr></thead>
+      <tbody>
+        {% for item in trade_data %}{% with t=item.trade tr=item.trend %}
+        <tr>
+          <td>
+            <span class="badge badge-open" style="cursor:pointer;"
+              onclick="switchSymbol('BINANCE:{{ t.symbol }}','{{ t.symbol }}',null)">
+              {{ t.symbol }}
+            </span><br>
+            <span class="muted" style="font-size:0.72rem;">{{ t.created_at|date:"M d, H:i" }}</span>
+          </td>
+          <td class="price-cell">${{ t.entry_price }}</td>
+          <td class="price-cell" id="cur-{{ t.id }}">
+            {% if t.current_price %}${{ t.current_price }}{% else %}—{% endif %}
+          </td>
+          <td class="price-cell" style="color:var(--green);">
+            ${{ t.take_profit }}<br>
+            <span class="muted" style="font-size:0.72rem;">+{{ t.tp_percent }}%</span>
+          </td>
+          <td class="price-cell" style="color:var(--red);">
+            ${{ t.stop_loss }}<br>
+            <span class="muted" style="font-size:0.72rem;">-{{ t.sl_percent }}%</span>
+          </td>
+          <td>
+            {% if tr == 'BULLISH' %}<span class="trend-bull">▲ Bull</span>
+            {% elif tr == 'BEARISH' %}<span class="trend-bear">▼ Bear</span>
+            {% else %}<span class="trend-neut">→ Neutral</span>{% endif %}
+          </td>
+          <td id="sig-{{ t.id }}"><span class="muted" style="font-size:0.78rem;">—</span></td>
+          <td>
+            <a href="/trades/close/{{ t.id }}/" class="btn btn-danger btn-sm"
+               onclick="return confirm('Close this trade manually?')">Close</a>
+          </td>
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <div>No open trades yet.</div>
+      <a href="/trades/create/" class="btn btn-primary btn-sm" style="margin-top:1rem;">
+        Create your first trade
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ── Closed Trades ── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Closed Trades</span>
+    <span class="section-count">{{ total_closed }} closed</span>
+  </div>
+  <div class="table-card">
+    {% if closed_trades %}
+    <table>
+      <thead><tr>
+        <th>Symbol</th><th>Entry</th><th>Close Price</th>
+        <th>TP / SL</th><th>Result</th><th>PnL</th><th>Closed At</th>
+      </tr></thead>
+      <tbody>
+        {% for t in closed_trades %}
+        <tr>
+          <td><span class="mono">{{ t.symbol }}</span></td>
+          <td class="price-cell">${{ t.entry_price }}</td>
+          <td class="price-cell">
+            {% if t.current_price %}${{ t.current_price }}{% else %}—{% endif %}
+          </td>
+          <td>
+            <span style="color:var(--green);font-size:0.8rem;">+{{ t.tp_percent }}%</span> /
+            <span style="color:var(--red);font-size:0.8rem;">-{{ t.sl_percent }}%</span>
+          </td>
+          <td><span class="badge {{ t.status_badge_class }}">{{ t.get_status_display }}</span></td>
+          <td>
+            {% if t.pnl is not None %}
+              {% if t.pnl >= 0 %}<span class="pnl-pos">+${{ t.pnl|floatformat:2 }}</span>
+              {% else %}<span class="pnl-neg">${{ t.pnl|floatformat:2 }}</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="muted" style="font-size:0.8rem;">
+            {% if t.closed_at %}{{ t.closed_at|date:"M d, H:i" }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">📈</div>
+      <div>No closed trades yet. Create a trade and let the agent monitor it!</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<!-- TradingView -->
+<script src="https://s3.tradingview.com/tv.js"></script>
+
+<!-- External JS files -->
+<script src="{% static 'js/chart.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+
+<script>
+// ── Pass Django data to JavaScript ──
+window.OPEN_TRADES = [
+  {% for item in trade_data %}{
+    id:     {{ item.trade.id }},
+    symbol: '{{ item.trade.symbol }}',
+    entry:  {{ item.trade.entry_price }},
+    tp:     {{ item.trade.take_profit }},
+    sl:     {{ item.trade.stop_loss }},
+    tp_pct: {{ item.trade.tp_percent }},
+    sl_pct: {{ item.trade.sl_percent }},
+  },{% endfor %}
+];
+
+window.CLOSED_PNL = [
+  {% for t in closed_trades %}
+  {% if t.pnl is not None %}{{ t.pnl }},{% endif %}
+  {% endfor %}
+];
+
+// ── Initialize chart and dashboard ──
+initChart('BINANCE:BTCUSDT', 'BTCUSDT');
+initDashboard();
+</script>
+{% endblock %}

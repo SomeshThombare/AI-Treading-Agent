@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}New Trade – AI Trading Agent{% endblock %}
+
+{% block extra_css %}
+<style>
+  .create-wrap {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media(max-width:900px){ .create-wrap{ grid-template-columns:1fr; } }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+  .form-title {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+  .form-subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+  .tp-sl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* AI Suggestion Box */
+  .ai-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    min-height: 60px;
+    transition: border-color 0.3s;
+  }
+  .ai-box.loaded { border-color: var(--accent); }
+
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin-bottom: 0.8rem;
+  }
+
+  .ai-values {
+    display: flex;
+    gap: 1rem;
+    margin: 0.8rem 0;
+  }
+  .ai-val-item {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem;
+    text-align: center;
+  }
+  .ai-val-label { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+  .ai-val-num   { font-size: 1.3rem; font-family: var(--mono); font-weight: 700; margin-top: 0.2rem; }
+
+  .btn-apply {
+    width: 100%;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+  .btn-apply:hover { background: rgba(0,229,255,0.2); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Preview box */
+  #preview-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  .prev-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(30,45,69,0.4);
+    font-size: 0.82rem;
+  }
+  .prev-row:last-child { border-bottom: none; }
+  .prev-lbl { color: var(--muted); }
+
+  /* Info card */
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .info-card h3 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .lbl { color: var(--muted); }
+
+  .market-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-family: var(--mono);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+  .m-crypto   { background: rgba(0,229,255,0.1);  color: var(--accent); }
+  .m-forex    { background: rgba(0,230,118,0.1);  color: var(--green); }
+  .m-commodity{ background: rgba(255,214,0,0.1);  color: var(--yellow); }
+
+  .conf-high   { color: var(--green); }
+  .conf-medium { color: var(--yellow); }
+  .conf-low    { color: var(--red); }
+  .dir-up   { color: var(--green); font-family: var(--mono); font-weight: 700; }
+  .dir-down { color: var(--red);   font-family: var(--mono); font-weight: 700; }
+  .dir-neut { color: var(--muted); font-family: var(--mono); }
+
+  /* Direction badge in preview */
+  .dir-tag {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+  }
+  .dir-tag-buy  { background: rgba(0,230,118,0.15); color: var(--green); }
+  .dir-tag-sell { background: rgba(255,23,68,0.15); color: var(--red); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.5rem;">
+  <a href="/trades/dashboard/" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
+</div>
+
+<div class="create-wrap">
+
+  <!-- LEFT: Form -->
+  <div class="form-card">
+    <div class="form-title">
+      + New Paper Trade
+      <span id="market-badge" class="market-badge m-crypto">₿ Crypto</span>
+    </div>
+    <div class="form-subtitle">
+      AI analyzes the market and suggests direction + TP/SL values. You can edit before confirming.
+    </div>
+
+    <!-- AI Suggestion Box -->
+    <div id="ai-box" class="ai-box">
+      <div style="color:var(--muted); font-size:0.82rem;">
+        🤖 Select a symbol to get AI suggestion...
+      </div>
+    </div>
+
+    <!-- Trade Form -->
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Symbol -->
+      <div class="form-group">
+        <label for="{{ form.symbol.id_for_label }}">
+          {{ form.symbol.label }}
+          <span id="sym-trend" style="margin-left:0.5rem;font-size:0.8rem;"></span>
+        </label>
+        {{ form.symbol }}
+        {% for e in form.symbol.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+      </div>
+
+      <!-- Direction -->
+      <div class="form-group">
+        <label for="{{ form.direction.id_for_label }}">{{ form.direction.label }}</label>
+        {{ form.direction }}
+        <div class="help-text">BUY = profit if price rises · SELL = profit if price falls</div>
+        {% for e in form.direction.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+      </div>
+
+      <!-- Quantity / Amount -->
+      <div class="tp-sl-grid">
+        <div class="form-group">
+          <label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+          {{ form.quantity }}
+          <div class="help-text">How many units / lots</div>
+          {% for e in form.quantity.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+          {{ form.amount }}
+          <div class="help-text">Money put into trade</div>
+          {% for e in form.amount.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <!-- TP / SL -->
+      <div class="tp-sl-grid">
+        <div class="form-group">
+          <label for="{{ form.tp_percent.id_for_label }}">{{ form.tp_percent.label }}</label>
+          {{ form.tp_percent }}
+          <div class="help-text">Close on profit</div>
+          {% for e in form.tp_percent.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.sl_percent.id_for_label }}">{{ form.sl_percent.label }}</label>
+          {{ form.sl_percent }}
+          <div class="help-text">Close on loss</div>
+          {% for e in form.sl_percent.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="error-text" style="margin-bottom:1rem;">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <!-- Live Preview -->
+      <div id="preview-box">
+        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);
+                    margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.1em;">
+          Trade Preview
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Direction</span>
+          <span id="prev-dir"><span class="dir-tag dir-tag-buy">BUY</span></span>
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Entry Price</span>
+          <span id="prev-entry" style="font-family:var(--mono);color:var(--accent);">Loading…</span>
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Take Profit Target</span>
+          <span id="prev-tp" style="font-family:var(--mono);color:var(--green);">—</span>
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Stop Loss Target</span>
+          <span id="prev-sl" style="font-family:var(--mono);color:var(--red);">—</span>
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Risk / Reward</span>
+          <span id="prev-rr" style="font-family:var(--mono);">—</span>
+        </div>
+        <div class="prev-row">
+          <span class="prev-lbl">Position Value</span>
+          <span id="prev-posval" style="font-family:var(--mono);color:var(--accent);">—</span>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary"
+              style="width:100%;margin-top:1.5rem;padding:0.9rem;font-size:1rem;">
+        🚀 Open Trade
+      </button>
+    </form>
+  </div>
+
+  <!-- RIGHT: Sidebar -->
+  <div>
+    <div class="info-card">
+      <h3>How It Works</h3>
+      <div class="info-row"><span class="lbl">1. AI analyzes</span><span>60 candles</span></div>
+      <div class="info-row"><span class="lbl">2. LSTM predicts</span><span>UP / DOWN</span></div>
+      <div class="info-row"><span class="lbl">3. Suggests</span><span>TP / SL %</span></div>
+      <div class="info-row"><span class="lbl">4. You confirm</span><span>or edit</span></div>
+      <div class="info-row"><span class="lbl">5. Agent monitors</span><span>every 5s</span></div>
+      <div class="info-row"><span class="lbl">6. Auto-closes</span><span>on TP or SL</span></div>
+    </div>
+
+    <div class="info-card">
+      <h3>💡 BUY vs SELL</h3>
+      <p style="font-size:0.82rem;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--green);">BUY (Long):</strong> You profit when price goes UP.<br><br>
+        <strong style="color:var(--red);">SELL (Short):</strong> You profit when price goes DOWN.<br><br>
+        For SELL trades, TP is set <em>below</em> entry and SL <em>above</em> entry.<br><br>
+        This is <strong style="color:var(--accent);">paper trading</strong> — no real money!
+      </p>
+    </div>
+
+    <div class="info-card">
+      <h3>📊 Markets</h3>
+      <div class="info-row"><span class="lbl">₿ Crypto</span><span class="market-badge m-crypto">Binance</span></div>
+      <div class="info-row"><span class="lbl">💱 Forex</span><span class="market-badge m-forex">MT5/XM</span></div>
+      <div class="info-row"><span class="lbl">🥇 Gold</span><span class="market-badge m-commodity">MT5/XM</span></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ══════════════════════════════════════════
+//  Create Trade - inline JS
+// ══════════════════════════════════════════
+
+let currentPrice = null;
+let aiData       = null;
+
+const symSel  = document.getElementById('id_symbol');
+const dirSel  = document.getElementById('id_direction');
+const qtyInp  = document.getElementById('id_quantity');
+const tpInput = document.getElementById('id_tp_percent');
+const slInput = document.getElementById('id_sl_percent');
+
+// ── Event listeners ──
+if (symSel)  symSel.addEventListener('change', onSymbolChange);
+if (dirSel)  dirSel.addEventListener('change', updatePreview);
+if (qtyInp)  qtyInp.addEventListener('input',  updatePreview);
+if (tpInput) tpInput.addEventListener('input', updatePreview);
+if (slInput) slInput.addEventListener('input', updatePreview);
+
+// ── Run on page load ──
+onSymbolChange();
+
+
+// ── Symbol changed ──
+async function onSymbolChange() {
+  const symbol = symSel ? symSel.value : 'BTCUSDT';
+  if (!symbol) return;
+
+  updateMarketBadge(symbol);
+  showLoading(symbol);
+
+  await Promise.allSettled([
+    loadPrice(symbol),
+    loadAiSuggestion(symbol),
+  ]);
+}
+
+
+// ── Load live price ──
+async function loadPrice(symbol) {
+  try {
+    const r = await fetchTimeout(`/trades/price/${symbol}/`, 8000);
+    const d = await r.json();
+    if (d.status === 'ok') {
+      currentPrice = d.price;
+      updatePreview();
+      const el = document.getElementById('sym-trend');
+      if (el) {
+        el.innerHTML = d.trend === 'BULLISH'
+          ? '<span style="color:var(--green)">▲ Bullish</span>'
+          : d.trend === 'BEARISH'
+          ? '<span style="color:var(--red)">▼ Bearish</span>'
+          : '<span style="color:var(--muted)">→ Neutral</span>';
+      }
+    }
+  } catch(e) { console.warn('[AI] Price error:', e.message); }
+}
+
+
+// ── Load AI suggestion ──
+async function loadAiSuggestion(symbol) {
+  try {
+    const r = await fetchTimeout(`/trades/ai-suggest/${symbol}/`, 40000);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    aiData = d;
+    renderAi(d);
+  } catch(e) {
+    console.error('[AI] Error:', e.message);
+    showError('AI suggestion failed: ' + e.message);
+  }
+}
+
+
+// ── Render AI box ──
+function renderAi(d) {
+  const box = document.getElementById('ai-box');
+  if (!box) return;
+
+  if (!d.model_ready) {
+    showError(d.message || 'Model not trained. Run: python manage.py train_models --symbol BTCUSDT --candles 300');
+    return;
+  }
+
+  box.classList.add('loaded');
+
+  const confClass = d.confidence >= 70 ? 'conf-high' : d.confidence >= 55 ? 'conf-medium' : 'conf-low';
+  const dirHTML   = d.direction === 'UP'
+    ? '<span class="dir-up">▲ Bullish</span> — AI suggests BUY'
+    : d.direction === 'DOWN'
+    ? '<span class="dir-down">▼ Bearish</span> — AI suggests SELL'
+    : '<span class="dir-neut">→ Neutral</span> — no clear signal';
+
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+      <span class="ai-badge">🤖 AI Suggestion</span>
+      <span class="${confClass}" style="font-family:var(--mono);font-size:0.8rem;">
+        ${d.confidence}% confident
+      </span>
+    </div>
+    <div style="font-size:0.85rem;margin-bottom:0.6rem;">${dirHTML}</div>
+    <div class="ai-values">
+      <div class="ai-val-item">
+        <div class="ai-val-label">Take Profit</div>
+        <div class="ai-val-num" style="color:var(--green);">${d.tp_percent}%</div>
+      </div>
+      <div class="ai-val-item">
+        <div class="ai-val-label">Stop Loss</div>
+        <div class="ai-val-num" style="color:var(--red);">${d.sl_percent}%</div>
+      </div>
+    </div>
+    <button class="btn-apply" onclick="applyAi()">✨ Apply AI Suggestion</button>
+    <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">${d.message}</div>
+  `;
+}
+
+
+// ── Apply AI to form (now also sets direction) ──
+function applyAi() {
+  if (!aiData || !aiData.model_ready) return;
+
+  // Set direction from AI prediction
+  if (dirSel && aiData.direction) {
+    if (aiData.direction === 'UP')   dirSel.value = 'BUY';
+    if (aiData.direction === 'DOWN') dirSel.value = 'SELL';
+    dirSel.style.borderColor = 'var(--green)';
+    setTimeout(() => { dirSel.style.borderColor = ''; }, 2000);
+  }
+
+  if (tpInput) {
+    tpInput.value = aiData.tp_percent;
+    tpInput.style.borderColor = 'var(--green)';
+    setTimeout(() => { tpInput.style.borderColor = ''; }, 2000);
+  }
+  if (slInput) {
+    slInput.value = aiData.sl_percent;
+    slInput.style.borderColor = 'var(--green)';
+    setTimeout(() => { slInput.style.borderColor = ''; }, 2000);
+  }
+  updatePreview();
+}
+
+
+// ── Update price preview (direction-aware) ──
+function updatePreview() {
+  const s = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+  const sHTML = (id, v) => { const e = document.getElementById(id); if(e) e.innerHTML = v; };
+
+  const direction = dirSel ? dirSel.value : 'BUY';
+  const tp  = parseFloat(tpInput?.value) || 0;
+  const sl  = parseFloat(slInput?.value) || 0;
+  const qty = parseFloat(qtyInp?.value)  || 0;
+
+  // Direction badge
+  if (direction === 'SELL') {
+    sHTML('prev-dir', '<span class="dir-tag dir-tag-sell">SELL (Short)</span>');
+  } else {
+    sHTML('prev-dir', '<span class="dir-tag dir-tag-buy">BUY (Long)</span>');
+  }
+
+  if (!currentPrice) return;
+
+  s('prev-entry', '$' + fmt(currentPrice));
+
+  // TP/SL prices flip based on direction
+  let tpPrice, slPrice;
+  if (direction === 'SELL') {
+    // SELL: TP below entry, SL above entry
+    tpPrice = tp ? currentPrice * (1 - tp/100) : null;
+    slPrice = sl ? currentPrice * (1 + sl/100) : null;
+  } else {
+    // BUY: TP above entry, SL below entry
+    tpPrice = tp ? currentPrice * (1 + tp/100) : null;
+    slPrice = sl ? currentPrice * (1 - sl/100) : null;
+  }
+
+  s('prev-tp', tpPrice ? '$' + fmt(tpPrice) : '—');
+  s('prev-sl', slPrice ? '$' + fmt(slPrice) : '—');
+
+  // Risk/Reward
+  if (tp && sl) {
+    const rr = (tp/sl).toFixed(1);
+    const el = document.getElementById('prev-rr');
+    if (el) {
+      el.textContent = rr + ':1';
+      el.style.color = rr >= 2 ? 'var(--green)' : rr >= 1.5 ? 'var(--yellow)' : 'var(--red)';
+    }
+  }
+
+  // Position value = entry price × quantity
+  if (qty) {
+    s('prev-posval', '$' + fmt(currentPrice * qty));
+  } else {
+    s('prev-posval', '—');
+  }
+}
+
+
+// ── Show loading ──
+function showLoading(symbol) {
+  const box = document.getElementById('ai-box');
+  if (!box) return;
+  box.classList.remove('loaded');
+  box.innerHTML = `<span class="spinner"></span> Loading AI suggestion for <strong>${symbol}</strong>...`;
+}
+
+
+// ── Show error ──
+function showError(msg) {
+  const box = document.getElementById('ai-box');
+  if (!box) return;
+  box.classList.remove('loaded');
+  box.innerHTML = `<div style="color:var(--yellow);font-size:0.82rem;
+    padding:0.5rem;background:rgba(255,214,0,0.08);
+    border-radius:6px;border-left:3px solid var(--yellow);">
+    ⚠️ ${msg}
+  </div>`;
+}
+
+
+// ── Update market badge ──
+function updateMarketBadge(symbol) {
+  const el = document.getElementById('market-badge');
+  if (!el) return;
+  const crypto = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT'];
+  const gold   = ['XAUUSD','XAGUSD','XTIUSD'];
+  if (crypto.includes(symbol))    { el.textContent='₿ Crypto';    el.className='market-badge m-crypto'; }
+  else if (gold.includes(symbol)) { el.textContent='🥇 Commodity'; el.className='market-badge m-commodity'; }
+  else                            { el.textContent='💱 Forex';     el.className='market-badge m-forex'; }
+}
+
+
+// ── Helpers ──
+function fmt(p) {
+  if (!p) return '—';
+  if (p >= 1000) return p.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (p >= 1)    return p.toFixed(4);
+  return p.toFixed(6);
+}
+
+function fetchTimeout(url, ms=15000) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, {signal: ctrl.signal}).finally(() => clearTimeout(timer));
+}
+</script>
+{% endblock %}

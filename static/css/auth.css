@@ -1,0 +1,130 @@
+/*
+  static/css/auth.css
+  Styles for login and register pages.
+*/
+
+/* ── Auth wrapper — centers the card on screen ── */
+.auth-wrap {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* ── Auth card ── */
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow);
+}
+
+/* ── Auth header ── */
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+.auth-header p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+/* ── Auth divider ── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Auth footer ── */
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-footer a:hover { text-decoration: underline; }
+
+/* ── Submit button ── */
+.auth-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+  font-size: 0.95rem;
+}
+
+/* ── Auth form inputs — force full width inside card ── */
+.auth-card input,
+.auth-card select,
+.auth-card textarea {
+  width: 100%;
+}
+
+/* ── Input icon wrapper ── */
+.input-group {
+  position: relative;
+}
+
+.input-group input {
+  padding-left: 2.5rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+/* ── Password strength indicator ── */
+.password-strength {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 0.4rem;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s, background 0.3s;
+  width: 0%;
+}
+
+.strength-weak   { background: var(--red);    width: 33%; }
+.strength-medium { background: var(--yellow); width: 66%; }
+.strength-strong { background: var(--green);  width: 100%; }
