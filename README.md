@@ -324,7 +324,7 @@ BINANCE_API_SECRET=optional-if-using-authenticated-endpoints
 | `MT5_LOGIN` / `MT5_PASSWORD` / `MT5_SERVER` | Register a free demo account at [XM Global](https://www.xm.com/) → Download MT5 → Note login credentials |
 | `BINANCE_API_KEY` | Not required for public market data (candles, prices). Only needed for authenticated/trading endpoints — [Binance API docs](https://binance-docs.github.io/apidocs/) |
 
-> 🔒 **Never commit your `.env` file to Git.** Add it to `.gitignore`.
+> 🔒 **Never commit your `.env` file to Git.** Add it to `.gitignore`..
 
 ---
 
