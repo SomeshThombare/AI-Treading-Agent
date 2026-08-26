@@ -31,6 +31,7 @@ A web-based paper-trading platform that lets beginner traders safely practise BU
 - [License](#-license)
 
 ---
+---
 
 ## 📖 Overview
 
